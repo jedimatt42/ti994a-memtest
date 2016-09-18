@@ -1,0 +1,10 @@
+*.o
+*.i
+*.s
+*.a
+*.bin
+*.elf
+*.iml
+mapfile
+.idea
+
