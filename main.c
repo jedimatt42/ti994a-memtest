@@ -2,8 +2,9 @@
 #include <vdp.h>
 #include <system.h>
 
-#define SCREEN_COLOR (COLOR_BLACK << 4) + COLOR_WHITE
+#define SCREEN_COLOR (COLOR_BLACK << 4) + COLOR_CYAN
 #define ERROR_COLOR (COLOR_BLACK << 4) + COLOR_MEDRED
+#define SUCCESS_COLOR (COLOR_BLACK << 4) + COLOR_LTGREEN
 
 void writehex(unsigned int row, unsigned int col, const unsigned int value) {
   unsigned char buf[3] = { 0, 0, 0 };
@@ -15,10 +16,11 @@ void writehex(unsigned int row, unsigned int col, const unsigned int value) {
 
 void printSummary(unsigned int ec) {
   if (ec == 0) {
-    writestring(20, 13, "All 32K Passed");
+    VDP_SET_REGISTER(VDP_REG_COL, SUCCESS_COLOR);
+    writestring(18, 13, "All 32K Passed");
   } else {
     VDP_SET_REGISTER(VDP_REG_COL, ERROR_COLOR);
-    writestring(20, 14, "Found errors");
+    writestring(18, 14, "Found errors");
   }
 }
 
@@ -124,7 +126,7 @@ void main()
   VDP_SET_REGISTER(VDP_REG_MODE1, unblank);
   charsetlc();
 
-  writestring(1, 0, "32K Expansion Memory Test ver 1.0");
+  writestring(1, 0, "32K Expansion Memory Test ver 1.1");
 
   writestring(20, 0, "- Jedimatt42/Atariage : matt@cwfk.net -");
   writestring(22, 0, "   Crafted with gcc-tms9900 by insomnia");
