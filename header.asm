@@ -13,7 +13,13 @@
 # Start of subprogram list (unused)
 # This doubles as the terminator of the program chain
 program_record:
-  data  0x0000    # Next program chain record
+  data  program_record2    # Next program chain record
   data  _start    # Entry point for program
+  nstring "32K EXP-RAM BURNIN"  # Name of program
+  even
+
+program_record2:
+  data  0x0000    # Next program chain record
+  data  _start2   # Entry point for program
   nstring "32K EXP-RAM TEST"  # Name of program
   even
