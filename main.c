@@ -35,11 +35,12 @@ unsigned int test4k(const unsigned int row, unsigned char* addr) {
   writestring(row, 26, "      ");
 
   const char spinner[4] = { '-', '\\', '|', '/' };
+  int spinneridx = 0;
 
-  for( int tries=0; tries<10; tries++) {
-    vdpchar(VDP_SCREEN_TEXT(row, 26), spinner[tries % 4]);
+  for( int tries=0; tries<12; tries++) {
 
     // Test with incrementing values
+    vdpchar(VDP_SCREEN_TEXT(row, 26), spinner[spinneridx++ % 4]);
     unsigned int val = 0x0000;
 
     for( volatile unsigned int* a=(unsigned int*)addr; a<=end; a++ ) {
@@ -56,6 +57,7 @@ unsigned int test4k(const unsigned int row, unsigned char* addr) {
     }
 
     // Test with bitwise not incrementing values
+    vdpchar(VDP_SCREEN_TEXT(row, 26), spinner[spinneridx++ % 4]);
     val = 0x0000;
 
     for( volatile unsigned int* a=(unsigned int*)addr; a<=end; a++ ) {
@@ -72,6 +74,7 @@ unsigned int test4k(const unsigned int row, unsigned char* addr) {
     }
 
     // Test data lines
+    vdpchar(VDP_SCREEN_TEXT(row, 26), spinner[spinneridx++ % 4]);
     val = 0x8000;
 
     for( volatile unsigned int* a=(unsigned int*)addr; a<=end; a++ ) {
@@ -84,6 +87,7 @@ unsigned int test4k(const unsigned int row, unsigned char* addr) {
       }
     }
 
+    vdpchar(VDP_SCREEN_TEXT(row, 26), spinner[spinneridx++ % 4]);
     val = 0xA5A5;
     for( volatile unsigned int* a=(unsigned int*)addr; a<=end; a++ ) {
       *a = val;
@@ -96,6 +100,7 @@ unsigned int test4k(const unsigned int row, unsigned char* addr) {
       }
     }
 
+    vdpchar(VDP_SCREEN_TEXT(row, 26), spinner[spinneridx++ % 4]);
     val = ~0xA5A5;
     for( volatile unsigned int* a=(unsigned int*)addr; a<=end; a++ ) {
       *a = val;
@@ -126,17 +131,21 @@ void main()
   VDP_SET_REGISTER(VDP_REG_MODE1, unblank);
   charsetlc();
 
-  writestring(1, 0, "32K Expansion Memory Test ver 1.1");
+  writestring(1, 0, "32K Expansion Memory Test ver 1.3");
 
   writestring(20, 0, "- Jedimatt42/Atariage : matt@cwfk.net -");
   writestring(22, 0, "   Crafted with gcc-tms9900 by insomnia");
   writestring(23, 0, "              & libti99 by Tursi");
 
+  int passcount = *(((volatile int*)0x8300)+12);
 
-  writestring(14, 15, "Pass #");
+  if (passcount > 1) {
+    writestring(14, 8, "Burnin");
+  }
+  writestring(14, 15, "Pass >");
 
   unsigned int ec = 0;
-  for( int i = 1; i <= 10 && ec == 0; i++ ) {
+  for( int i = 1; i <= passcount && ec == 0; i++ ) {
     writehex(14, 21, i);
     ec += test4k(4, (unsigned char*)0x2000);
     ec += test4k(6, (unsigned char*)0xA000);
