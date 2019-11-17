@@ -17,14 +17,14 @@ void writehex(unsigned int row, unsigned int col, const unsigned int value) {
 void printSummary(unsigned int ec) {
   if (ec == 0) {
     VDP_SET_REGISTER(VDP_REG_COL, SUCCESS_COLOR);
-    writestring(18, 13, "All 32K Passed");
+    writestring(21, 11, "All Memory Passed");
   } else {
     VDP_SET_REGISTER(VDP_REG_COL, ERROR_COLOR);
-    writestring(18, 14, "Found errors");
+    writestring(21, 14, "Found errors");
   }
 }
 
-unsigned int test4k(const unsigned int row, unsigned char* addr) {
+unsigned int testBlock(const unsigned int row, unsigned char* addr) {
   unsigned int ec = 0;
   unsigned int* end=(unsigned int*)(addr + 0x1FFF);
   writestring(row, 3, "Testing");
@@ -123,6 +123,14 @@ unsigned int test4k(const unsigned int row, unsigned char* addr) {
   return ec;
 }
 
+int test32k() {
+    int ec = testBlock(5, (unsigned char*)0x2000);
+    ec += testBlock(6, (unsigned char*)0xA000);
+    ec += testBlock(7, (unsigned char*)0xC000);
+    ec += testBlock(8, (unsigned char*)0xE000);
+    return ec;
+}
+
 void main()
 {
   set_text();
@@ -130,31 +138,23 @@ void main()
   vdpmemset(0x0000,' ',nTextEnd);
   charsetlc();
 
-  writestring(1, 0, "32K Expansion Memory Test ver 1.3");
+  writestring(0, 0, "Expansion Memory Test ver 1.4");
 
-  writestring(20, 0, "- Jedimatt42/Atariage : matt@cwfk.net -");
-  writestring(22, 0, "   Crafted with gcc-tms9900 by insomnia");
-  writestring(23, 0, "              & libti99 by Tursi");
+  writestring(23, 0, "- Jedimatt42/Atariage : matt@cwfk.net -");
 
   int passcount = *(((volatile int*)0x8300)+12);
 
   if (passcount > 1) {
-    writestring(14, 8, "Burnin");
+    writestring(3, 8, "Burnin");
   }
-  writestring(14, 15, "Pass >");
+  writestring(3, 15, "Pass >");
 
   unsigned int ec = 0;
   for( int i = 1; i <= passcount && ec == 0; i++ ) {
-    writehex(14, 21, i);
-    ec += test4k(4, (unsigned char*)0x2000);
-    ec += test4k(6, (unsigned char*)0xA000);
-    ec += test4k(8, (unsigned char*)0xC000);
-    ec += test4k(10, (unsigned char*)0xE000);
+    writehex(3, 21, i);
+    ec = test32k();
   }
   printSummary(ec);
   
-  // Reset some state the vdp interrupt expects
-  VDP_INT_CTRL=VDP_INT_CTRL_DISABLE_SPRITES|VDP_INT_CTRL_DISABLE_SOUND;
-  VDP_SCREEN_TIMEOUT=1;
-  halt();
+  while(1) { }
 }
