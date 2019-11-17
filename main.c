@@ -187,6 +187,12 @@ int __attribute__ ((noinline)) test32k() {
     return ec;
 }
 
+#define NOMEM 0
+#define FOUNDATION 1
+#define SAMS 2
+#define MYARC 3
+#define BASE32K 4
+
 void main()
 {
   int passcount = *(((volatile int*)0x8300)+12);
@@ -200,23 +206,29 @@ void main()
 
   writestring(23, 0, "- Jedimatt42/Atariage : matt@cwfk.net -");
 
+  int memtype = NOMEM;
+
   if (!hasRam()) {
     writestring(2, 0, "No RAM detected");
     while(1) { }
   } else if (hasSams()) {
     writestring(2, 0, "SAMS detected");
+    memtype = SAMS;
   } else {
     writestring(2, 0, "Standard 32K detected");
+    memtype = BASE32K;
   }
 
   if (passcount > 1) {
-    writestring(4, 8, "Burnin");
+    writestring(4, 0, "Burnin");
+    writestring(4, 7, "Pass >");
   }
-  writestring(4, 15, "Pass >");
 
   unsigned int ec = 0;
   for( int i = 1; i <= passcount && ec == 0; i++ ) {
-    writehex(4, 21, i);
+    if (passcount > 1) {
+      writehex(4, 14, i);
+    }
     ec = test32k();
   }
   printSummary(ec);
