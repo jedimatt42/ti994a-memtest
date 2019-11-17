@@ -8,7 +8,7 @@ _start:
 # Create stack
   li sp, >8400
 # Enter C environment
-  li r12, >7FFF
+  li r12, >0100
   b @main
 
 # quick version

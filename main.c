@@ -1,6 +1,7 @@
 
 #include <vdp.h>
 #include <system.h>
+#include <string.h>
 
 #define SCREEN_COLOR (COLOR_BLACK << 4) + COLOR_CYAN
 #define ERROR_COLOR (COLOR_BLACK << 4) + COLOR_MEDRED
@@ -24,8 +25,8 @@ void __attribute__ ((noinline)) printSummary(unsigned int ec) {
   }
 }
 
-unsigned int __attribute__ ((noinline)) testBlock(const unsigned int row, unsigned char* addr) {
-  unsigned int ec = 0;
+int __attribute__ ((noinline)) testBlock(const unsigned int row, unsigned char* addr) {
+  int ec = 0;
   unsigned int* end=(unsigned int*)(addr + 0x1FFF);
   writestring(row, 3, "Testing");
   writehex(row, 11, (int)addr);
@@ -179,12 +180,46 @@ int __attribute__ ((noinline)) hasSams() {
   return detected;
 }
 
+int __attribute__ ((noinline)) samsPagecount() {
+  samsMapOn();
+  int pages = 256;
+  samsMapOff();
+  return pages;
+}
+
 int __attribute__ ((noinline)) test32k() {
-    int ec = testBlock(6, (unsigned char*)0x2000);
+  int ec = testBlock(6, (unsigned char*)0x2000);
+  ec += testBlock(7, (unsigned char*)0xA000);
+  ec += testBlock(8, (unsigned char*)0xC000);
+  ec += testBlock(9, (unsigned char*)0xE000);
+  return ec;
+}
+
+int __attribute__ ((noinline)) testSams(int pagecount) {
+  writestring(2, 16, int2str(4*pagecount));
+  writestring(2, 20, "K");
+  int ec = 0;
+  for (int j = 0; j < pagecount && ec == 0; j += 8 ) {
+    samsMapOn();
+    samsMapPage(j, 0x2000);
+    samsMapPage(j+1, 0x3000);
+    samsMapPage(j+2, 0xA000);
+    samsMapPage(j+3, 0xB000);
+    samsMapPage(j+4, 0xC000);
+    samsMapPage(j+5, 0xD000);
+    samsMapPage(j+6, 0xE000);
+    samsMapPage(j+7, 0xF000);
+    writestring(4, 16, "pages ");
+    writestring(4,22, int2str(j));
+    writestring(4,26, "->");
+    writestring(4,29, int2str(j+7));
+    ec += testBlock(6, (unsigned char*)0x2000);
     ec += testBlock(7, (unsigned char*)0xA000);
     ec += testBlock(8, (unsigned char*)0xC000);
     ec += testBlock(9, (unsigned char*)0xE000);
-    return ec;
+    samsMapOff();
+  }
+  return ec;
 }
 
 #define NOMEM 0
@@ -221,15 +256,27 @@ void main()
 
   if (passcount > 1) {
     writestring(4, 0, "Burnin");
-    writestring(4, 7, "Pass >");
+    writestring(4, 7, "Pass ");
   }
 
-  unsigned int ec = 0;
+  int pagecount = 0;
+  if (memtype == SAMS) {
+    pagecount = samsPagecount();
+  }
+
+  int ec = 0;
   for( int i = 1; i <= passcount && ec == 0; i++ ) {
     if (passcount > 1) {
-      writehex(4, 14, i);
+      writestring(4, 12, int2str(i));
     }
-    ec = test32k();
+    switch(memtype) {
+      case BASE32K:
+        ec = test32k();
+        break;
+      case SAMS:
+        ec = testSams(pagecount);
+        break;
+    }
   }
   printSummary(ec);
   
