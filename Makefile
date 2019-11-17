@@ -5,7 +5,7 @@ LIBTI99?=/home/matthew/dev/ti99/libti99
 
 ELF2CART=elf2cart
 
-FNAME=exptest
+FNAME=exptest8
 
 LDFLAGS=\
   --section-start .text=6000 --section-start .data=8320
@@ -15,7 +15,7 @@ OBJECT_LIST=\
   crt0.o\
   main.o
 
-all: $(FNAME).bin 
+all: $(FNAME).bin
 
 $(FNAME).bin: $(FNAME).elf
 	$(ELF2CART) $(FNAME).elf $(FNAME).bin
@@ -35,5 +35,5 @@ $(FNAME).elf: $(OBJECT_LIST)
 	$(GAS) $< -o $@
 
 %.o: %.c
-	$(CC) -c $< -std=c99 -O1 --save-temp -I$(LIBTI99) -o $@
+	$(CC) -c $< -std=c99 -O2 --save-temp -I$(LIBTI99) -o $@
 
