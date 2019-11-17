@@ -6,7 +6,7 @@
 #define ERROR_COLOR (COLOR_BLACK << 4) + COLOR_MEDRED
 #define SUCCESS_COLOR (COLOR_BLACK << 4) + COLOR_LTGREEN
 
-void writehex(unsigned int row, unsigned int col, const unsigned int value) {
+void __attribute__ ((noinline)) writehex(unsigned int row, unsigned int col, const unsigned int value) {
   unsigned char buf[3] = { 0, 0, 0 };
   *((unsigned int*)buf) = byte2hex[value >> 8];
   writestring(row, col, buf);
@@ -14,7 +14,7 @@ void writehex(unsigned int row, unsigned int col, const unsigned int value) {
   writestring(row, col + 2, buf);
 }
 
-void printSummary(unsigned int ec) {
+void __attribute__ ((noinline)) printSummary(unsigned int ec) {
   if (ec == 0) {
     VDP_SET_REGISTER(VDP_REG_COL, SUCCESS_COLOR);
     writestring(21, 11, "All Memory Passed");
@@ -24,7 +24,7 @@ void printSummary(unsigned int ec) {
   }
 }
 
-unsigned int testBlock(const unsigned int row, unsigned char* addr) {
+unsigned int __attribute__ ((noinline)) testBlock(const unsigned int row, unsigned char* addr) {
   unsigned int ec = 0;
   unsigned int* end=(unsigned int*)(addr + 0x1FFF);
   writestring(row, 3, "Testing");
@@ -123,7 +123,7 @@ unsigned int testBlock(const unsigned int row, unsigned char* addr) {
   return ec;
 }
 
-void foundationBank(int page) {
+void __attribute__ ((noinline)) foundationBank(int page) {
   __asm__(
     "LI r12, >1E02\n\t"
     "LDCR %0,2\n\t"
@@ -131,21 +131,21 @@ void foundationBank(int page) {
   );
 }
 
-void samsMapOn() {
+void __attribute__ ((noinline)) samsMapOn() {
   __asm__(
     "LI r12, >1E00\n\t"
     "SBO 1\n\t"
   );
 }
 
-void samsMapOff() {
+void __attribute__ ((noinline)) samsMapOff() {
   __asm__(
     "LI r12, >1E00\n\t"
     "SBZ 1\n\t"
   );
 }
 
-void samsMapPage(int page, int location) {
+void __attribute__ ((noinline)) samsMapPage(int page, int location) {
   int adjusted = page << 8;
 
   __asm__(
@@ -159,14 +159,27 @@ void samsMapPage(int page, int location) {
   );
 }
 
-int hasRam() {
+int __attribute__ ((noinline)) hasRam() {
   volatile int* lower_exp = (volatile int*) 0x2000;
   *lower_exp = 0;
   *lower_exp = 0x1234;
   return (*lower_exp == 0x1234);
 }
 
-int test32k() {
+int __attribute__ ((noinline)) hasSams() {
+  volatile int* lower_exp = (volatile int*) 0x2000;
+  samsMapOn();
+  samsMapPage(0, 0x2000);
+  *lower_exp = 0x1234;
+  samsMapPage(1, 0x2000);
+  *lower_exp = 0;
+  samsMapPage(0, 0x2000);
+  int detected = (*lower_exp == 0x1234);
+  samsMapOff();
+  return detected;
+}
+
+int __attribute__ ((noinline)) test32k() {
     int ec = testBlock(6, (unsigned char*)0x2000);
     ec += testBlock(7, (unsigned char*)0xA000);
     ec += testBlock(8, (unsigned char*)0xC000);
@@ -190,6 +203,8 @@ void main()
   if (!hasRam()) {
     writestring(2, 0, "No RAM detected");
     while(1) { }
+  } else if (hasSams()) {
+    writestring(2, 0, "SAMS detected");
   } else {
     writestring(2, 0, "Standard 32K detected");
   }
