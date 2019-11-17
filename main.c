@@ -185,14 +185,14 @@ int __attribute__ ((noinline)) samsPagecount() {
   volatile int* lower_exp = (volatile int*) 0x2000;
 
   // set initial state of all pages
-  for(int i = 0; i < 8192; i++) {
+  for(int i = 0; i < 4096; i++) {
     samsMapPage(i, 0x2000);
     *lower_exp = 0x1234;
   }
   // now mark pages and stop when they repeat
   samsMapPage(0, 0x2000);
   int pages = 0;
-  while(pages < 8192 && *lower_exp != 0xFFFF) {
+  while(pages < 4096 && *lower_exp != 0xFFFF) {
     *lower_exp = 0xFFFF;
     samsMapPage(++pages, 0x2000);
   }
