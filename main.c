@@ -124,6 +124,13 @@ int __attribute__ ((noinline)) testBlock(const unsigned int row, unsigned char* 
   return ec;
 }
 
+int __attribute__ ((noinline)) hasRam() {
+  volatile int* lower_exp = (volatile int*) 0x2000;
+  *lower_exp = 0;
+  *lower_exp = 0x1234;
+  return (*lower_exp == 0x1234);
+}
+
 #define CRU_FOUNDATION 0x1E00
 #define CRU_MYARC 0x1000
 
@@ -135,6 +142,32 @@ void __attribute__ ((noinline)) foundationBank(int page, int crubase) {
     "LDCR %0,4\n\t"
     : : "r"(adjusted), "r"(crubase+2) : "r12"
   );
+}
+
+int __attribute__ ((noinline)) hasFoundation(int crubase) {
+  volatile int* lower_exp = (volatile int*) 0x2000;
+  foundationBank(0, crubase);
+  *lower_exp = 0x1234;
+  foundationBank(1, crubase);
+  *lower_exp = 0;
+  foundationBank(0, crubase);
+  return (*lower_exp == 0x1234);
+}
+
+int __attribute__ ((noinline)) foundationPagecount(int crubase) {
+  volatile int* lower_exp = (volatile int*) 0x2000;
+  for(int i = 0; i < 16; i++) {
+    foundationBank(i, crubase);
+    *lower_exp = 0x1234;
+  }
+  foundationBank(0, crubase);
+  int pages = 0;
+  while(pages < 16 && *lower_exp != 0xFFFF) {
+    *lower_exp = 0xFFFF;
+    foundationBank(++pages, crubase);
+  }
+  foundationBank(0, crubase);
+  return pages;  
 }
 
 void __attribute__ ((noinline)) samsMapOn() {
@@ -166,13 +199,6 @@ void __attribute__ ((noinline)) samsMapPage(int page, int location) {
   );
 }
 
-int __attribute__ ((noinline)) hasRam() {
-  volatile int* lower_exp = (volatile int*) 0x2000;
-  *lower_exp = 0;
-  *lower_exp = 0x1234;
-  return (*lower_exp == 0x1234);
-}
-
 int __attribute__ ((noinline)) hasSams() {
   volatile int* lower_exp = (volatile int*) 0x2000;
   samsMapOn();
@@ -184,16 +210,6 @@ int __attribute__ ((noinline)) hasSams() {
   int detected = (*lower_exp == 0x1234);
   samsMapOff();
   return detected;
-}
-  
-int __attribute__ ((noinline)) hasFoundation(int crubase) {
-  volatile int* lower_exp = (volatile int*) 0x2000;
-  foundationBank(0, crubase);
-  *lower_exp = 0x1234;
-  foundationBank(1, crubase);
-  *lower_exp = 0;
-  foundationBank(0, crubase);
-  return (*lower_exp == 0x1234);
 }
 
 int __attribute__ ((noinline)) samsPagecount() {
@@ -225,6 +241,8 @@ int __attribute__ ((noinline)) test32k() {
 }
 
 int __attribute__ ((noinline)) testFoundation(int pagecount, int crubase) {
+  writestring(2, 20, int2str(32*pagecount));
+  writestring(2, 23, "K");
   int ec = testBlock(6, (unsigned char*)0x2000);
   ec += testBlock(7, (unsigned char*)0xA000);
   ec += testBlock(8, (unsigned char*)0xC000);
@@ -284,10 +302,10 @@ void main()
     writestring(2, 0, "No RAM detected");
     while(1) { }
   } else if (hasFoundation(CRU_MYARC)) {
-    writestring(2, 0, "Myarc 128k detected");
+    writestring(2, 0, "Myarc detected");
     memtype = MYARC;
   } else if (hasFoundation(CRU_FOUNDATION)) {
-    writestring(2, 0, "Foundation 128k detected");
+    writestring(2, 0, "Foundation detected");
     memtype = FOUNDATION;
   } else if (hasSams()) {
     writestring(2, 0, "SAMS detected");
@@ -305,8 +323,10 @@ void main()
   int pagecount = 0;
   if (memtype == SAMS) {
     pagecount = samsPagecount();
-  } else if (memtype == MYARC || memtype == FOUNDATION) {
-    pagecount = 4;
+  } else if (memtype == MYARC) {
+    pagecount = foundationPagecount(CRU_MYARC);
+  } else if (memtype == FOUNDATION) {
+    pagecount = foundationPagecount(CRU_FOUNDATION);
   }
 
   int ec = 0;
