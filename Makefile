@@ -5,7 +5,7 @@ LIBTI99?=/home/matthew/dev/ti99/libti99
 
 ELF2CART=elf2cart
 
-FNAME=32kexptest
+FNAME=exptest
 
 LDFLAGS=\
   --section-start .text=6000 --section-start .data=8320
