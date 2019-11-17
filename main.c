@@ -124,11 +124,16 @@ int __attribute__ ((noinline)) testBlock(const unsigned int row, unsigned char* 
   return ec;
 }
 
-void __attribute__ ((noinline)) foundationBank(int page) {
+#define CRU_FOUNDATION 0x1E00
+#define CRU_MYARC 0x1000
+
+void __attribute__ ((noinline)) foundationBank(int page, int crubase) {
+  int adjusted = page << 8;
+
   __asm__(
-    "LI r12, >1E02\n\t"
-    "LDCR %0,2\n\t"
-    : : "r"(page) : "r12"
+    "MOV %1, r12\n\t"
+    "LDCR %0,4\n\t"
+    : : "r"(adjusted), "r"(crubase+2) : "r12"
   );
 }
 
@@ -147,6 +152,7 @@ void __attribute__ ((noinline)) samsMapOff() {
 }
 
 void __attribute__ ((noinline)) samsMapPage(int page, int location) {
+  // this contradicts having any more than 256 pages... :(
   int adjusted = page << 8;
 
   __asm__(
@@ -179,6 +185,16 @@ int __attribute__ ((noinline)) hasSams() {
   samsMapOff();
   return detected;
 }
+  
+int __attribute__ ((noinline)) hasFoundation(int crubase) {
+  volatile int* lower_exp = (volatile int*) 0x2000;
+  foundationBank(0, crubase);
+  *lower_exp = 0x1234;
+  foundationBank(1, crubase);
+  *lower_exp = 0;
+  foundationBank(0, crubase);
+  return (*lower_exp == 0x1234);
+}
 
 int __attribute__ ((noinline)) samsPagecount() {
   samsMapOn();
@@ -201,6 +217,14 @@ int __attribute__ ((noinline)) samsPagecount() {
 }
 
 int __attribute__ ((noinline)) test32k() {
+  int ec = testBlock(6, (unsigned char*)0x2000);
+  ec += testBlock(7, (unsigned char*)0xA000);
+  ec += testBlock(8, (unsigned char*)0xC000);
+  ec += testBlock(9, (unsigned char*)0xE000);
+  return ec;
+}
+
+int __attribute__ ((noinline)) testFoundation(int pagecount, int crubase) {
   int ec = testBlock(6, (unsigned char*)0x2000);
   ec += testBlock(7, (unsigned char*)0xA000);
   ec += testBlock(8, (unsigned char*)0xC000);
@@ -259,6 +283,12 @@ void main()
   if (!hasRam()) {
     writestring(2, 0, "No RAM detected");
     while(1) { }
+  } else if (hasFoundation(CRU_MYARC)) {
+    writestring(2, 0, "Myarc 128k detected");
+    memtype = MYARC;
+  } else if (hasFoundation(CRU_FOUNDATION)) {
+    writestring(2, 0, "Foundation 128k detected");
+    memtype = FOUNDATION;
   } else if (hasSams()) {
     writestring(2, 0, "SAMS detected");
     memtype = SAMS;
@@ -275,6 +305,8 @@ void main()
   int pagecount = 0;
   if (memtype == SAMS) {
     pagecount = samsPagecount();
+  } else if (memtype == MYARC || memtype == FOUNDATION) {
+    pagecount = 4;
   }
 
   int ec = 0;
@@ -288,6 +320,12 @@ void main()
         break;
       case SAMS:
         ec = testSams(pagecount);
+        break;
+      case MYARC:
+        ec = testFoundation(pagecount, CRU_MYARC);
+        break;
+      case FOUNDATION:
+        ec = testFoundation(pagecount, CRU_FOUNDATION);
         break;
     }
   }
