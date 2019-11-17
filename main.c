@@ -243,10 +243,16 @@ int __attribute__ ((noinline)) test32k() {
 int __attribute__ ((noinline)) testFoundation(int pagecount, int crubase) {
   writestring(2, 20, int2str(32*pagecount));
   writestring(2, 23, "K");
-  int ec = testBlock(6, (unsigned char*)0x2000);
-  ec += testBlock(7, (unsigned char*)0xA000);
-  ec += testBlock(8, (unsigned char*)0xC000);
-  ec += testBlock(9, (unsigned char*)0xE000);
+  int ec = 0;
+  for (int j = 0; j < pagecount && ec == 0; j++) {
+    foundationBank(j, crubase);
+    writestring(4, 16, "page ");
+    writestring(4,21, int2str(j));
+    ec = testBlock(6, (unsigned char*)0x2000);
+    ec += testBlock(7, (unsigned char*)0xA000);
+    ec += testBlock(8, (unsigned char*)0xC000);
+    ec += testBlock(9, (unsigned char*)0xE000);
+  }
   return ec;
 }
 
