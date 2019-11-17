@@ -123,16 +123,61 @@ unsigned int testBlock(const unsigned int row, unsigned char* addr) {
   return ec;
 }
 
+void foundationBank(int page) {
+  __asm__(
+    "LI r12, >1E02\n\t"
+    "LDCR %0,2\n\t"
+    : : "r"(page) : "r12"
+  );
+}
+
+void samsMapOn() {
+  __asm__(
+    "LI r12, >1E00\n\t"
+    "SBO 1\n\t"
+  );
+}
+
+void samsMapOff() {
+  __asm__(
+    "LI r12, >1E00\n\t"
+    "SBZ 1\n\t"
+  );
+}
+
+void samsMapPage(int page, int location) {
+  int adjusted = page << 8;
+
+  __asm__(
+    "LI r12, >1E00\n\t"
+    "SRL %0, 12\n\t"
+    "SLA %0, 1\n\t"
+    "SBO 0\n\t"
+    "MOVB %1, @>4000(%0)\n\t"
+    "SBZ 0\n\t"
+     : : "r"(location), "r"(adjusted) : "r12"
+  );
+}
+
+int hasRam() {
+  volatile int* lower_exp = (volatile int*) 0x2000;
+  *lower_exp = 0;
+  *lower_exp = 0x1234;
+  return (*lower_exp == 0x1234);
+}
+
 int test32k() {
-    int ec = testBlock(5, (unsigned char*)0x2000);
-    ec += testBlock(6, (unsigned char*)0xA000);
-    ec += testBlock(7, (unsigned char*)0xC000);
-    ec += testBlock(8, (unsigned char*)0xE000);
+    int ec = testBlock(6, (unsigned char*)0x2000);
+    ec += testBlock(7, (unsigned char*)0xA000);
+    ec += testBlock(8, (unsigned char*)0xC000);
+    ec += testBlock(9, (unsigned char*)0xE000);
     return ec;
 }
 
 void main()
 {
+  int passcount = *(((volatile int*)0x8300)+12);
+
   set_text();
   VDP_SET_REGISTER(VDP_REG_COL, SCREEN_COLOR);
   vdpmemset(0x0000,' ',nTextEnd);
@@ -142,16 +187,21 @@ void main()
 
   writestring(23, 0, "- Jedimatt42/Atariage : matt@cwfk.net -");
 
-  int passcount = *(((volatile int*)0x8300)+12);
+  if (!hasRam()) {
+    writestring(2, 0, "No RAM detected");
+    while(1) { }
+  } else {
+    writestring(2, 0, "Standard 32K detected");
+  }
 
   if (passcount > 1) {
-    writestring(3, 8, "Burnin");
+    writestring(4, 8, "Burnin");
   }
-  writestring(3, 15, "Pass >");
+  writestring(4, 15, "Pass >");
 
   unsigned int ec = 0;
   for( int i = 1; i <= passcount && ec == 0; i++ ) {
-    writehex(3, 21, i);
+    writehex(4, 21, i);
     ec = test32k();
   }
   printSummary(ec);
