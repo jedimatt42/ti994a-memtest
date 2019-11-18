@@ -15,7 +15,7 @@ void __attribute__ ((noinline)) writehex(unsigned int row, unsigned int col, con
   writestring(row, col + 2, buf);
 }
 
-void __attribute__ ((noinline)) printSummary(unsigned int ec) {
+void __attribute__ ((noinline)) printSummary(int ec) {
   if (ec == 0) {
     VDP_SET_REGISTER(VDP_REG_COL, SUCCESS_COLOR);
     writestring(21, 11, "All Memory Passed");
@@ -248,7 +248,7 @@ int __attribute__ ((noinline)) testFoundation(int pagecount, int crubase) {
     foundationBank(j, crubase);
     writestring(4, 16, "page ");
     writestring(4,21, int2str(j));
-    ec = testBlock(6, (unsigned char*)0x2000);
+    ec += testBlock(6, (unsigned char*)0x2000);
     ec += testBlock(7, (unsigned char*)0xA000);
     ec += testBlock(8, (unsigned char*)0xC000);
     ec += testBlock(9, (unsigned char*)0xE000);
@@ -298,7 +298,7 @@ void main()
   vdpmemset(0x0000,' ',nTextEnd);
   charsetlc();
 
-  writestring(0, 0, "Expansion Memory Test ver 1.4");
+  writestring(0, 0, "Expansion Memory Test ver 1.5");
 
   writestring(23, 0, "- Jedimatt42/Atariage : matt@cwfk.net -");
 
@@ -307,15 +307,15 @@ void main()
   if (!hasRam()) {
     writestring(2, 0, "No RAM detected");
     while(1) { }
+  } else if (hasSams() && samsPagecount() > (128 / 4)) {
+    writestring(2, 0, "SAMS detected");
+    memtype = SAMS;
   } else if (hasFoundation(CRU_MYARC)) {
     writestring(2, 0, "Myarc detected");
     memtype = MYARC;
-  } else if (hasFoundation(CRU_FOUNDATION)) {
+  } else if (hasFoundation(CRU_FOUNDATION)) { // sams testing can look like foundation :(
     writestring(2, 0, "Foundation detected");
     memtype = FOUNDATION;
-  } else if (hasSams()) {
-    writestring(2, 0, "SAMS detected");
-    memtype = SAMS;
   } else {
     writestring(2, 0, "Standard 32K detected");
     memtype = BASE32K;
@@ -342,16 +342,16 @@ void main()
     }
     switch(memtype) {
       case BASE32K:
-        ec = test32k();
+        ec += test32k();
         break;
       case SAMS:
-        ec = testSams(pagecount);
+        ec += testSams(pagecount);
         break;
       case MYARC:
-        ec = testFoundation(pagecount, CRU_MYARC);
+        ec += testFoundation(pagecount, CRU_MYARC);
         break;
       case FOUNDATION:
-        ec = testFoundation(pagecount, CRU_FOUNDATION);
+        ec += testFoundation(pagecount, CRU_FOUNDATION);
         break;
     }
   }
