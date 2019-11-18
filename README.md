@@ -1,6 +1,17 @@
-# TI-99/4A 32K Memory Expansion Test 
+# TI-99/4A Memory Expansion Test 
 
 The purpose of this code is to run an expansion memory test from a TI-99/4A console that has nothing but a FlashRom 99 cartridge to test with. 
+
+These are destructive memory tests... pre-loaded interrupt routines or RAM Disk content will be **erased**.
+
+## Supported Cards
+
+* Basic 32K memory expansions ( internal or external )
+* Foundation 128K (or 512K modded) 
+* Myarc 128K or 512K 
+* SAMS Memory (upto 1024K)
+
+Other cards may fallback to basic 32K.
 
 ## Build
 
