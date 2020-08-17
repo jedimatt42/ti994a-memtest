@@ -167,7 +167,7 @@ int __attribute__ ((noinline)) foundationPagecount(int crubase) {
     foundationBank(++pages, crubase);
   }
   foundationBank(0, crubase);
-  return pages;  
+  return pages;
 }
 
 void __attribute__ ((noinline)) samsMapOn() {
@@ -185,17 +185,16 @@ void __attribute__ ((noinline)) samsMapOff() {
 }
 
 void __attribute__ ((noinline)) samsMapPage(int page, int location) {
-  // this contradicts having any more than 256 pages... :(
-  int adjusted = page << 8;
-
   __asm__(
     "LI r12, >1E00\n\t"
     "SRL %0, 12\n\t"
     "SLA %0, 1\n\t"
     "SBO 0\n\t"
     "MOVB %1, @>4000(%0)\n\t"
+    "SWPB %1\n\t"
+    "MOVB %1, @>4000(%0)\n\t"
     "SBZ 0\n\t"
-     : : "r"(location), "r"(adjusted) : "r12"
+     : : "r"(location), "r"(page) : "r12"
   );
 }
 
@@ -298,7 +297,7 @@ void main()
   vdpmemset(0x0000,' ',nTextEnd);
   charsetlc();
 
-  writestring(0, 0, "Expansion Memory Test ver 1.5");
+  writestring(0, 0, "Expansion Memory Test ver 1.6");
 
   writestring(23, 0, "- Jedimatt42/Atariage : matt@cwfk.net -");
 
@@ -356,6 +355,6 @@ void main()
     }
   }
   printSummary(ec);
-  
+
   while(1) { }
 }
