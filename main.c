@@ -186,16 +186,17 @@ void __attribute__ ((noinline)) samsMapOff() {
 
 void __attribute__ ((noinline)) samsMapPage(int page, int location) {
   __asm__(
-    "LI r12, >1E00\n\t"
-    "SRL %0, 12\n\t"
-    "SLA %0, 1\n\t"
-    "SBO 0\n\t"
-    "MOVB %1, @>4000(%0)\n\t"
-    "SWPB %1\n\t"
-    "MOVB %1, @>4000(%0)\n\t"
-    "SBZ 0\n\t"
-     : : "r"(location), "r"(page) : "r12"
-  );
+      "LI r12, >1E00\n\t"
+      "SRL %0, 12\n\t"
+      "SLA %0, 1\n\t"
+      "SWPB %1\n\t"
+      "SBO 0\n\t"
+      "MOV %1, @>4000(%0)\n\t"
+      "SBZ 0\n\t"
+      "SWPB %1\n\t"
+      :
+      : "r"(location), "r"(page)
+      : "r12");
 }
 
 int __attribute__ ((noinline)) hasSams() {
@@ -297,7 +298,7 @@ void main()
   vdpmemset(0x0000,' ',nTextEnd);
   charsetlc();
 
-  writestring(0, 0, "Expansion Memory Test ver 1.6");
+  writestring(0, 0, "Expansion Memory Test ver 1.7");
 
   writestring(23, 0, "- Jedimatt42/Atariage : matt@cwfk.net -");
 
