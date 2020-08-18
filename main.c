@@ -3,9 +3,13 @@
 #include <system.h>
 #include <string.h>
 
-#define SCREEN_COLOR (COLOR_BLACK << 4) + COLOR_CYAN
-#define ERROR_COLOR (COLOR_BLACK << 4) + COLOR_MEDRED
-#define SUCCESS_COLOR (COLOR_BLACK << 4) + COLOR_LTGREEN
+extern char mcolor;
+extern char scolor;
+extern char fcolor;
+
+#define SCREEN_COLOR mcolor
+#define ERROR_COLOR fcolor
+#define SUCCESS_COLOR scolor
 
 void __attribute__ ((noinline)) writehex(unsigned int row, unsigned int col, const unsigned int value) {
   unsigned char buf[3] = { 0, 0, 0 };

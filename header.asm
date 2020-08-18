@@ -8,7 +8,21 @@
   data program_record
 
 # Start of DSR chain (unused)
-  data 0x0000 
+  data 0x0000
+
+  def mcolor
+  def scolor
+  def fcolor
+
+# Color bytes
+  TEXT 'COLOR'
+mcolor:
+  byte 0x17
+scolor:
+  byte 0x12
+fcolor:
+  byte 0x16
+  even
 
 # Start of subprogram list (unused)
 # This doubles as the terminator of the program chain
