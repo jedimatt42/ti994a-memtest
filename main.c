@@ -266,7 +266,7 @@ int __attribute__ ((noinline)) testFoundation(int pagecount, int crubase) {
 
 int __attribute__ ((noinline)) testSams(int pagecount) {
   writestring(2, 16, int2str(4*pagecount));
-  writestring(2, 20, "K");
+  writestring(2, 21, "K");
   int ec = 0;
   for (int j = 0; j < pagecount && ec == 0; j += 8 ) {
     samsMapOn();
@@ -309,9 +309,9 @@ void main(int passcount)
   {
     try_limit = 1;
     passcount = 1; // perform 1 pass, but abreviate the test using try_limit
-    writestring(0, 0, "Memory Quick Check ver 1.8");
+    writestring(0, 0, "Memory Quick Check ver 2.0");
   } else {
-    writestring(0, 0, "Expansion Memory Test ver 1.8");
+    writestring(0, 0, "Expansion Memory Test ver 2.0");
   }
 
   writestring(23, 0, "- Jedimatt42/Atariage : matt@cwfk.net -");
