@@ -1,6 +1,6 @@
 # TI-99/4A Memory Expansion Test 
 
-The purpose of this code is to run an expansion memory test from a TI-99/4A console that has nothing but a FlashRom 99 cartridge to test with. 
+The purpose of this code is to run an expansion memory test from a TI-99/4A console that operates within an 8K cartridge and console scratchpad ram. The target memory to test is not used by the operation of the program.
 
 These are destructive memory tests... pre-loaded interrupt routines or RAM Disk content will be **erased**.
 
@@ -9,9 +9,11 @@ These are destructive memory tests... pre-loaded interrupt routines or RAM Disk 
 * Basic 32K memory expansions ( internal or external )
 * Foundation 128K (or 512K modded) 
 * Myarc 128K or 512K 
-* SAMS Memory (upto 1024K)
+* SAMS Memory (upto 16M)
 
 Other cards may fallback to basic 32K.
+
+A SAMS hardware error may look like a 64K Foundation card due to overlapping paging schemes.
 
 ## Build
 
@@ -21,7 +23,7 @@ Edit or comment out the part in the Makefile where it copies the rom into a plac
 
 run: make
 
-It will produce a 32kexptest.bin 8K cartridge rom image. 
+It will produce a exptest_c.bin 8K cartridge rom image. 
 
 ## Cool bits...
 
