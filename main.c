@@ -11,6 +11,8 @@ extern char fcolor;
 #define ERROR_COLOR fcolor
 #define SUCCESS_COLOR scolor
 
+int try_limit;
+
 void __attribute__ ((noinline)) writehex(unsigned int row, unsigned int col, const unsigned int value) {
   unsigned char buf[3] = { 0, 0, 0 };
   *((unsigned int*)buf) = byte2hex[value >> 8];
@@ -42,7 +44,7 @@ int __attribute__ ((noinline)) testBlock(const unsigned int row, unsigned char* 
   const char spinner[4] = { '-', '\\', '|', '/' };
   int spinneridx = 0;
 
-  for( int tries=0; tries<12; tries++) {
+  for( int tries=0; tries<try_limit; tries++) {
 
     // Test with incrementing values
     vdpchar(VDP_SCREEN_TEXT(row, 26), spinner[spinneridx++ % 4]);
@@ -53,68 +55,70 @@ int __attribute__ ((noinline)) testBlock(const unsigned int row, unsigned char* 
       val++;
     }
 
-    val = 0x0000;
-    for( volatile unsigned int* a=(unsigned int*)addr; a<=end; a++ ) {
-      if ( *a != val ) {
-	    ec++;
+    for (volatile unsigned int *a = (unsigned int *)addr; a <= end; a++) {
+      if (*a != val) {
+        ec++;
       }
       val++;
     }
 
-    // Test with bitwise not incrementing values
-    vdpchar(VDP_SCREEN_TEXT(row, 26), spinner[spinneridx++ % 4]);
-    val = 0x0000;
+    if (try_limit > 1) {
+      val = 0x0000;
+      // Test with bitwise not incrementing values
+      vdpchar(VDP_SCREEN_TEXT(row, 26), spinner[spinneridx++ % 4]);
+      val = 0x0000;
 
-    for( volatile unsigned int* a=(unsigned int*)addr; a<=end; a++ ) {
-      *a = ~val;
-      val++;
-    }
-
-    val = 0x0000;
-    for( volatile unsigned int* a=(unsigned int*)addr; a<=end; a++ ) {
-      if ( *a != ~val ) {
-	    ec++;
+      for( volatile unsigned int* a=(unsigned int*)addr; a<=end; a++ ) {
+        *a = ~val;
+        val++;
       }
-      val++;
-    }
 
-    // Test data lines
-    vdpchar(VDP_SCREEN_TEXT(row, 26), spinner[spinneridx++ % 4]);
-    val = 0x8000;
-
-    for( volatile unsigned int* a=(unsigned int*)addr; a<=end; a++ ) {
-      for( unsigned char i = 0; i<<8; i++) {
-        *a = val;
-        if (*a != val) {
-          ec++;
+      val = 0x0000;
+      for( volatile unsigned int* a=(unsigned int*)addr; a<=end; a++ ) {
+        if ( *a != ~val ) {
+        ec++;
         }
-        val = val << i;
+        val++;
       }
-    }
 
-    vdpchar(VDP_SCREEN_TEXT(row, 26), spinner[spinneridx++ % 4]);
-    val = 0xA5A5;
-    for( volatile unsigned int* a=(unsigned int*)addr; a<=end; a++ ) {
-      *a = val;
-    }
+      // Test data lines
+      vdpchar(VDP_SCREEN_TEXT(row, 26), spinner[spinneridx++ % 4]);
+      val = 0x8000;
 
-    val = 0xA5A5;
-    for( volatile unsigned int* a=(unsigned int*)addr; a<=end; a++ ) {
-      if ( *a != val ) {
-	    ec++;
+      for( volatile unsigned int* a=(unsigned int*)addr; a<=end; a++ ) {
+        for( unsigned char i = 0; i<<8; i++) {
+          *a = val;
+          if (*a != val) {
+            ec++;
+          }
+          val = val << i;
+        }
       }
-    }
 
-    vdpchar(VDP_SCREEN_TEXT(row, 26), spinner[spinneridx++ % 4]);
-    val = ~0xA5A5;
-    for( volatile unsigned int* a=(unsigned int*)addr; a<=end; a++ ) {
-      *a = val;
-    }
+      vdpchar(VDP_SCREEN_TEXT(row, 26), spinner[spinneridx++ % 4]);
+      val = 0xA5A5;
+      for( volatile unsigned int* a=(unsigned int*)addr; a<=end; a++ ) {
+        *a = val;
+      }
 
-    val = ~0xA5A5;
-    for( volatile unsigned int* a=(unsigned int*)addr; a<=end; a++ ) {
-      if ( *a != val ) {
-	    ec++;
+      val = 0xA5A5;
+      for( volatile unsigned int* a=(unsigned int*)addr; a<=end; a++ ) {
+        if ( *a != val ) {
+        ec++;
+        }
+      }
+
+      vdpchar(VDP_SCREEN_TEXT(row, 26), spinner[spinneridx++ % 4]);
+      val = ~0xA5A5;
+      for( volatile unsigned int* a=(unsigned int*)addr; a<=end; a++ ) {
+        *a = val;
+      }
+
+      val = ~0xA5A5;
+      for( volatile unsigned int* a=(unsigned int*)addr; a<=end; a++ ) {
+        if ( *a != val ) {
+        ec++;
+        }
       }
     }
   }
@@ -293,9 +297,13 @@ int __attribute__ ((noinline)) testSams(int pagecount) {
 #define MYARC 3
 #define BASE32K 4
 
-void main()
+void main(int passcount)
 {
-  int passcount = *(((volatile int*)0x8300)+12);
+  try_limit = 12;
+  if (passcount == 0) {
+    try_limit = 1;
+    passcount = 1;  // perform 1 pass, but abreviate the test using try_limit
+  }
 
   set_text();
   VDP_SET_REGISTER(VDP_REG_COL, SCREEN_COLOR);

@@ -33,7 +33,13 @@ program_record:
   even
 
 program_record2:
-  data  0x0000    # Next program chain record
+  data  program_record3    # Next program chain record
   data  _start2   # Entry point for program
   nstring "EXP-RAM TEST"  # Name of program
+  even
+
+program_record3:
+  data  0x0000
+  data  _start3
+  nstring "QUICK CHECK"
   even
