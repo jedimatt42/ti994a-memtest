@@ -55,6 +55,7 @@ int __attribute__ ((noinline)) testBlock(const unsigned int row, unsigned char* 
       val++;
     }
 
+    val = 0x0000;
     for (volatile unsigned int *a = (unsigned int *)addr; a <= end; a++) {
       if (*a != val) {
         ec++;
@@ -63,7 +64,6 @@ int __attribute__ ((noinline)) testBlock(const unsigned int row, unsigned char* 
     }
 
     if (try_limit > 1) {
-      val = 0x0000;
       // Test with bitwise not incrementing values
       vdpchar(VDP_SCREEN_TEXT(row, 26), spinner[spinneridx++ % 4]);
       val = 0x0000;
@@ -299,18 +299,20 @@ int __attribute__ ((noinline)) testSams(int pagecount) {
 
 void main(int passcount)
 {
-  try_limit = 12;
-  if (passcount == 0) {
-    try_limit = 1;
-    passcount = 1;  // perform 1 pass, but abreviate the test using try_limit
-  }
-
   set_text();
   VDP_SET_REGISTER(VDP_REG_COL, SCREEN_COLOR);
   vdpmemset(0x0000,' ',nTextEnd);
   charsetlc();
 
-  writestring(0, 0, "Expansion Memory Test ver 1.7");
+  try_limit = 12;
+  if (passcount == 0)
+  {
+    try_limit = 1;
+    passcount = 1; // perform 1 pass, but abreviate the test using try_limit
+    writestring(0, 0, "Memory Quick Check ver 1.8");
+  } else {
+    writestring(0, 0, "Expansion Memory Test ver 1.8");
+  }
 
   writestring(23, 0, "- Jedimatt42/Atariage : matt@cwfk.net -");
 
