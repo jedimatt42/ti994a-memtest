@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <romset version="1.0">
    <resources>
-      <rom id="romimage" file="exptest8.bin"/>
+      <rom id="romimage" file="exptest_c.bin"/>
    </resources>
    <configuration>
       <pcb type="standard">
