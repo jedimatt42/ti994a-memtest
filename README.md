@@ -27,7 +27,7 @@ It will produce a exptest_c.bin 8K cartridge rom image.
 
 ## Cool bits...
 
-This build is an example of using GCC to run code that doesn't actually require the 32k expansion ram for the TI-99/4A. It leaves interrupts off, sets the gcc stack to work backwards from the top of the TI scratchpad space (>8400). It sets the data segment to begin write after the gcc workspace (>8320). And all of the constant and code goes into the 8k cartridge rom space (>6000). 
+This build is an example of using GCC to run code that doesn't actually require the 32k expansion ram for the TI-99/4A. It leaves interrupts off, sets the gcc stack to work backwards from the top of the TI scratchpad space (>8400). It sets the data segment (>8320) to begin write after the gcc workspace (>8300). And all of the constant and code goes into the 8k cartridge rom space (>6000). 
 
 ## License
 
