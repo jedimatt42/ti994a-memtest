@@ -278,7 +278,7 @@ int __attribute__ ((noinline)) testSams(int pagecount) {
     samsMapPage(j+5, 0xD000);
     samsMapPage(j+6, 0xE000);
     samsMapPage(j+7, 0xF000);
-    writestring(4, 16, "pages ");
+    writestring(4, 16, "pages            ");
     writestring(4,22, int2str(j));
     writestring(4,26, "->");
     writestring(4,29, int2str(j+7));
@@ -304,14 +304,18 @@ void main(int passcount)
   vdpmemset(0x0000,' ',nTextEnd);
   charsetlc();
 
+  const char* ver = "2.1";
+
   try_limit = 12;
   if (passcount == 0)
   {
     try_limit = 1;
     passcount = 1; // perform 1 pass, but abreviate the test using try_limit
-    writestring(0, 0, "Memory Quick Check ver 2.0");
+    writestring(0, 0, "Memory Quick Check ver ");
+    writestring(0, 23, ver);
   } else {
-    writestring(0, 0, "Expansion Memory Test ver 2.0");
+    writestring(0, 0, "Expansion Memory Test ver ");
+    writestring(0, 26, ver);
   }
 
   writestring(23, 0, "- Jedimatt42/Atariage : matt@cwfk.net -");
