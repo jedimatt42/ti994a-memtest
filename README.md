@@ -10,6 +10,7 @@ These are destructive memory tests... pre-loaded interrupt routines or RAM Disk 
 * Foundation 128K (or 512K modded) 
 * Myarc 128K or 512K 
 * SAMS Memory (upto 16M)
+* Corcomp 256k/512k ramdisk
 
 Other cards may fallback to basic 32K.
 
