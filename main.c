@@ -3,6 +3,8 @@
 #include <system.h>
 #include <string.h>
 
+#define PROG_VERSION "2.2"
+
 extern char mcolor;
 extern char scolor;
 extern char fcolor;
@@ -12,6 +14,7 @@ extern char fcolor;
 #define SUCCESS_COLOR scolor
 
 int try_limit;
+int corcompCru;
 
 void __attribute__ ((noinline)) writehex(unsigned int row, unsigned int col, const unsigned int value) {
   unsigned char buf[3] = { 0, 0, 0 };
@@ -178,6 +181,94 @@ int __attribute__ ((noinline)) foundationPagecount(int crubase) {
   return pages;
 }
 
+void crubit(int cru, int onoff) {
+  __asm__(
+    "MOV %0,r12\n\t"
+    : : "r" (cru) : "r12"
+  );
+
+  if (onoff) {
+    __asm__(
+      "SBO 0\n\t"
+    );
+  } else {
+    __asm__(
+      "SBZ 0\n\t"
+    );
+  }
+}
+
+/*
+Corcomp bank switching
+
+CRU Bit         Purpose
+>1000           DSR Rom Enable
+>1002           Ram Disable
+>1004           Bank 0
+>1006           Second 256K
+>1008           Rom Page
+>100C           Bank 1 \
+>1014           Bank 2  \
+>101C           Bank 3    \  Pages
+>1024           Bank 4    /
+>102C           Bank 5   /
+>1034           Bank 6  /
+>103C           Bank 7 /
+>1040           Reset=1
+*/
+int __attribute__((noinline)) bank2cru(int page, int crubase) {
+  unsigned char crus[8] = { 0x04, 0x0C, 0x14, 0x1C, 0x24, 0x2C, 0x34, 0x3C };
+  return crubase + crus[page%8];
+}
+
+void __attribute__((noinline)) corcompBank(int page, int crubase) {
+  int bank = page % 8;
+
+  int bit = bank2cru(bank, crubase);
+
+  crubit(crubase + 6, bank == page);
+
+  int oldbank = bank == 0 ? 7 : bank - 1;
+  int oldbit = bank2cru(oldbank, crubase);
+
+  crubit(oldbit, 0);
+  crubit(bit, 1);
+}
+
+int __attribute__((noinline)) hasCorcomp(int crubase) {
+  // can be at crubase >1000 or >1400
+  volatile int* lower_exp = (volatile int*)0x2000;
+
+  corcompBank(0, crubase);
+  *lower_exp = 0x1234;
+  corcompBank(1, crubase);
+  *lower_exp = 0;
+  corcompBank(0, crubase);
+  if (*lower_exp == 0x1234) {
+    corcompCru = crubase;
+    return 1;
+  } else {
+    corcompCru = 0;
+    return 0;
+  }
+}
+
+int __attribute__((noinline)) corcompPagecount() {
+  volatile int* lower_exp = (volatile int*)0x2000;
+  for (int i = 0; i < 16; i++) {
+    corcompBank(i, corcompCru);
+    *lower_exp = 0x1234;
+  }
+  corcompBank(0, corcompCru);
+  int pages = 0;
+  while (pages < 16 && *lower_exp != 0xFFFF) {
+    *lower_exp = 0xFFFF;
+    corcompBank(++pages, corcompCru);
+  }
+  corcompBank(0, corcompCru);
+  return pages;
+}
+
 void __attribute__ ((noinline)) samsMapOn() {
   __asm__(
     "LI r12, >1E00\n\t"
@@ -264,6 +355,22 @@ int __attribute__ ((noinline)) testFoundation(int pagecount, int crubase) {
   return ec;
 }
 
+int __attribute__((noinline)) testCorcomp(int pagecount) {
+  writestring(2, 20, int2str(32 * pagecount));
+  writestring(2, 23, "K");
+  int ec = 0;
+  for (int j = 0; j < pagecount && ec == 0; j++) {
+    corcompBank(j, corcompCru);
+    writestring(4, 16, "page ");
+    writestring(4, 21, int2str(j));
+    ec += testBlock(6, (unsigned char*)0x2000);
+    ec += testBlock(7, (unsigned char*)0xA000);
+    ec += testBlock(8, (unsigned char*)0xC000);
+    ec += testBlock(9, (unsigned char*)0xE000);
+  }
+  return ec;
+}
+
 int __attribute__ ((noinline)) testSams(int pagecount) {
   writestring(2, 16, int2str(4*pagecount));
   writestring(2, 21, "K");
@@ -296,6 +403,7 @@ int __attribute__ ((noinline)) testSams(int pagecount) {
 #define SAMS 2
 #define MYARC 3
 #define BASE32K 4
+#define CORCOMP 5
 
 void main(int passcount)
 {
@@ -304,7 +412,7 @@ void main(int passcount)
   vdpmemset(0x0000,' ',nTextEnd);
   charsetlc();
 
-  const char* ver = "2.1";
+  char* ver = PROG_VERSION;
 
   try_limit = 12;
   if (passcount == 0)
@@ -328,6 +436,9 @@ void main(int passcount)
   } else if (hasSams() && samsPagecount() > (128 / 4)) {
     writestring(2, 0, "SAMS detected");
     memtype = SAMS;
+  } else if (hasCorcomp(0x1000) || hasCorcomp(0x1400)) {
+    writestring(2, 0, "Corcomp 256k/512k");
+    memtype = CORCOMP;
   } else if (hasFoundation(CRU_MYARC)) {
     writestring(2, 0, "Myarc detected");
     memtype = MYARC;
@@ -345,12 +456,15 @@ void main(int passcount)
   }
 
   int pagecount = 0;
+
   if (memtype == SAMS) {
     pagecount = samsPagecount();
   } else if (memtype == MYARC) {
     pagecount = foundationPagecount(CRU_MYARC);
   } else if (memtype == FOUNDATION) {
     pagecount = foundationPagecount(CRU_FOUNDATION);
+  } else if (memtype == CORCOMP) {
+    pagecount = corcompPagecount();
   }
 
   int ec = 0;
@@ -370,6 +484,9 @@ void main(int passcount)
         break;
       case FOUNDATION:
         ec += testFoundation(pagecount, CRU_FOUNDATION);
+        break;
+      case CORCOMP:
+        ec += testCorcomp(pagecount);
         break;
     }
   }
