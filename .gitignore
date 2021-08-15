@@ -3,6 +3,7 @@
 *.s
 *.a
 *.bin
+*.RPK
 *.elf
 *.iml
 mapfile
