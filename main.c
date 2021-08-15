@@ -203,7 +203,7 @@ Corcomp bank switching
 
 CRU Bit         Purpose
 >1000           DSR Rom Enable
->1002           Ram Disable
+>1002           Ram Disable (0 is disable)
 >1004           Bank 0
 >1006           Second 256K
 >1008           Rom Page
@@ -238,6 +238,18 @@ void __attribute__((noinline)) corcompBank(int page, int crubase) {
 int __attribute__((noinline)) hasCorcomp(int crubase) {
   // can be at crubase >1000 or >1400
   volatile int* lower_exp = (volatile int*)0x2000;
+
+  // there may be clash with myarc... we can distinguish by
+  // turning all banks off.
+  crubit(crubase + 2, 0);
+  // ram should be disabled now.
+  *lower_exp = 0xCCCC;
+  if (*lower_exp == 0xCCCC) {
+    return 0;
+  }
+
+  // re-enable ram
+  crubit(crubase + 2, 1);
 
   corcompBank(0, crubase);
   *lower_exp = 0x1234;
