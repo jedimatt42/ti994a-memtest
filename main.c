@@ -3,7 +3,7 @@
 #include <system.h>
 #include <string.h>
 
-#define PROG_VERSION "2.2"
+#define PROG_VERSION "2.3"
 
 extern char mcolor;
 extern char scolor;
@@ -480,6 +480,11 @@ void main(int passcount)
   }
 
   int ec = 0;
+  if (memtype == FOUNDATION && pagecount == 2) {
+    ec = 1;
+    writestring(2, 0, "Error detecting card type");
+  }
+
   for( int i = 1; i <= passcount && ec == 0; i++ ) {
     if (passcount > 1) {
       writestring(4, 12, int2str(i));
